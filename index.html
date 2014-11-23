@@ -1,0 +1,98 @@
+<html>
+<head>
+<title>satellite</title>
+
+<script id="earth-vs" type="x-shader/x-vertex">
+attribute vec3 a_position;
+attribute vec2 a_uv;
+
+varying vec2 v_uv;
+varying float v_light;
+
+uniform mat4 u_projection;
+uniform mat4 u_view;
+
+void main(void)
+{
+	v_uv = a_uv;
+	mat3 v3 = mat3(u_view);
+	v_light = dot(normalize(mat3(u_view) * a_position), vec3(0,0,1));
+	gl_Position = u_projection * u_view * vec4(a_position,1);
+}
+</script>
+
+<script id="earth-fs" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec2 v_uv;
+varying float v_light;
+
+uniform sampler2D u_texture;
+
+void main(void)
+{
+	float sample = texture2D(u_texture, v_uv).r;
+	vec4 land = vec4(vec3(0.2, 0.5, 0.0) * v_light, 1.0);
+	vec4 sea =  vec4(vec3(0.1, 0.3, 0.7) * v_light, 1.0);
+	gl_FragColor = sea + (land-sea)*sample;
+}
+</script>
+
+<script id="orbit-vs" type="x-shader/x-vertex">
+attribute vec3 a_position;
+attribute float a_M;
+attribute float a_mm;
+
+varying float v_M;
+varying float v_mm;
+
+uniform mat4 u_projection;
+uniform mat4 u_view;
+
+void main(void)
+{
+	v_M = a_M;
+	v_mm = a_mm;
+	gl_Position = u_projection * u_view * vec4(a_position,1);
+}
+</script>
+
+<script id="orbit-fs" type="x-shader/x-fragment">
+precision mediump float;
+
+varying float v_M;
+varying float v_mm;
+
+uniform float u_time;
+
+void main(void)
+{
+	float mp = (u_time / (1000.0*24.0*60.0*60.0)) * v_mm;
+	float m = 1.0-fract(v_M/360.0 + mp + 1000.0);
+	float m1 = pow(m,50.0);
+	float m2 = pow(m,200.0);
+	float off = 0.1;
+	gl_FragColor = vec4(0.3,0.6,1.0, m1 * (1.0-off) + off) + vec4(1,1,1,1)*m2;
+}
+</script>
+
+<script type="text/javascript" src="data0.js"></script>
+<script type="text/javascript" src="satellite.js"></script>
+<style type="text/css">
+body {
+	margin: 0px;
+	padding: 0px;
+	background-color: black;
+	color: white;
+	font-family: monospace;
+}
+canvas {
+	width: 100%;
+	height: 100%;
+}
+</style>
+</head>
+<body>
+<canvas id="screen"></canvas>
+</body>
+</html>
