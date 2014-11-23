@@ -546,10 +546,18 @@ window.onload = function () {
 	}
 	earth_texture.src = "earth.png";
 
-	window.onmousewheel = function (e) {
-		distance *= (1 - e.wheelDelta * 0.0001);
+	var scroll = function (d) {
+		distance *= (1 - d);
 		if (distance < 10000) distance = 10000;
 		if (distance > 200000) distance = 200000;
 	};
+
+	window.onmousewheel = function (e) {
+		scroll(e.wheelDelta * 0.0001);
+	};
+
+	window.addEventListener('DOMMouseScroll', function (e) {
+		scroll(e.detail * -0.003);
+	}, false);
 }
 
