@@ -502,7 +502,7 @@ function OrbitRenderer(orbits) {
 		gl.enable(gl.DEPTH_TEST);
 		gl.depthMask(false);
 		gl.disable(gl.CULL_FACE);
-		gl.lineWidth(2);
+		gl.lineWidth(3);
 		shader.enable();
 		for (var k in buffers) {
 			var b = buffers[k];
