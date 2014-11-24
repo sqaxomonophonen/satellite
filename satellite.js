@@ -209,25 +209,37 @@ function m4col(m4, col) {
 	return v4;
 }
 
-function v4dot(a,b) {
+function vndot(n,a,b)  {
 	var v = 0;
-	for (var i = 0; i < 4; i++) {
+	for (var i = 0; i < n; i++) {
 		v += a[i]*b[i];
 	}
 	return v;
+};
+
+function v4dot(a,b) {
+	return vndot(4,a,b);
 }
 
 function v3dot(a,b) {
-	var v = 0;
-	for (var i = 0; i < 3; i++) {
-		v += a[i]*b[i];
-	}
-	return v;
+	return vndot(3,a,b);
 }
 
-function v3len(v3) {
-	return Math.sqrt(v3dot(v3,v3));
+function v2dot(a,b) {
+	return vndot(2,a,b);
 }
+
+function vnlen(n,v) {
+	return Math.sqrt(vndot(n,v,v));
+};
+
+function v3len(v3) {
+	return vnlen(3,v3);
+}
+
+function v2len(v2) {
+	return vnlen(2,v2);
+};
 
 function v3apply(v3, m4) {
 	var v4 = [v3[0],v3[1],v3[2],1];
@@ -262,16 +274,36 @@ function v3normalize(v3) {
 	return r;
 }
 
-function v3add(a, b) {
+function vnadd(n,a,b) {
 	var s = [];
-	for (var i = 0; i < 3; i++) {
+	for (var i = 0; i < n; i++) {
 		s.push(a[i] + b[i]);
 	}
 	return s;
+};
+
+function vnsub(n,a,b) {
+	var s = [];
+	for (var i = 0; i < n; i++) {
+		s.push(a[i] - b[i]);
+	}
+	return s;
+};
+
+function v3add(a, b) {
+	return vnadd(3,a,b);
 }
 
-function v3scale(v3, scalar) {
-	return v3.map(function (v) { return v * scalar; });
+function v2add(a, b) {
+	return vnadd(2,a,b);
+};
+
+function v2sub(a, b) {
+	return vnsub(2,a,b);
+};
+
+function vscale(v, scalar) {
+	return v.map(function (v) { return v * scalar; });
 }
 
 function Orbits(data0) {
@@ -330,7 +362,7 @@ function Orbits(data0) {
 		var E = deg2rad(eccentric_anomaly_degrees);
 		var ex = (Math.cos(E) - orbit.e) * orbit.a;
 		var ey = Math.sin(E) * orbit.b;
-		var pos = v3add(v3scale(orbit.x, ex), v3scale(orbit.y, ey));
+		var pos = v3add(vscale(orbit.x, ex), vscale(orbit.y, ey));
 		return pos;
 	};
 
@@ -494,7 +526,7 @@ function Engine(screen, earth_texture, orbits) {
 	gl.enable(gl.BLEND);
 	gl.clearColor(0.02,0,0,0);
 
-	this.draw = function (distance) {
+	this.draw = function (distance, rotation) {
 		var w = screen.offsetWidth;
 		var h = screen.offsetHeight;
 		screen.width = w;
@@ -507,9 +539,9 @@ function Engine(screen, earth_texture, orbits) {
 		var projection = m4perspective(65,w/h,5,400000);
 		var view = m4identity();
 		view = m4mul(view, m4translation([0,0,-distance]));
-		view = m4mul(view, m4rotation([1,0,0], 10));
+		view = m4mul(view, m4rotation([1,0,0], rotation[1]));
 		var phi = Date.now()/1000;
-		view = m4mul(view, m4rotation([0,1,0], phi));
+		view = m4mul(view, m4rotation([0,1,0], phi + rotation[0]));
 
 		earth.draw(projection, view, time);
 		orbit.draw(projection, view, time);
@@ -532,6 +564,7 @@ window.onload = function () {
 	})();
 
 	var distance = 15000;
+	var rotation = [0,10];
 
 	var earth_texture = new Image();
 	earth_texture.onload = function () {
@@ -540,7 +573,7 @@ window.onload = function () {
 		var engine = new Engine(screen, earth_texture, orbits);
 
 		(function loop() {
-			engine.draw(distance);
+			engine.draw(distance, rotation);
 			request_animation_frame(loop);
 		})();
 	}
@@ -552,8 +585,59 @@ window.onload = function () {
 		if (distance > 200000) distance = 200000;
 	};
 
+	var pressed = false;
+	var anchor = null;
+	var dragging = false;
+	var drag_threshold = 3;
+	var lastp = null;
+
+	var turntable = function (delta) {
+		rotation = v2add(rotation, vscale(delta, 100/screen.offsetHeight));
+		if (rotation[1] > 90) rotation[1] = 90;
+		if (rotation[1] < -90) rotation[1] = -90;
+	};
+
+	var mousedown = function (p) {
+		pressed = true;
+		anchor = p;
+	};
+
+	var mouseup = function (p) {
+		pressed = false;
+		dragging = false;
+		anchor = null;
+		lastp = null;
+	};
+
+	var mousemove = function (p) {
+		if (dragging) {
+			var delta = v2sub(p,lastp);
+			turntable(delta);
+		}
+		if (pressed && !dragging) {
+			var delta = v2sub(p,anchor);
+			if (v2len(delta) > drag_threshold) {
+				dragging = true;
+				turntable(delta);
+			}
+		}
+		lastp = p;
+	};
+
 	window.onmousewheel = function (e) {
 		scroll(e.wheelDelta * 0.0001);
+	};
+
+	window.onmousedown = function (e) {
+		mousedown([e.layerX, e.layerY]);
+	};
+
+	window.onmouseup = function (e) {
+		mouseup([e.layerX, e.layerY]);
+	};
+
+	window.onmousemove = function (e) {
+		mousemove([e.layerX, e.layerY]);
 	};
 
 	window.addEventListener('DOMMouseScroll', function (e) {
