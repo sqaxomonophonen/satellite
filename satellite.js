@@ -451,7 +451,7 @@ function EarthRenderer(image) {
 		gl.enable(gl.CULL_FACE);
 		shader.enable();
 
-		view = m4mul(view, m4rotation([0,1,0], time / (1000*24*60*60)));
+		view = m4mul(view, m4rotation([0,1,0], (time * 360) / (1000*24*60*60)));
 
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 
