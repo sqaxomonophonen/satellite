@@ -575,7 +575,7 @@ window.onload = function () {
 			request_animation_frame(loop);
 		})();
 	}
-	earth_texture.src = "earth.png";
+	earth_texture.src = "earth.jpg";
 
 	var scroll = function (d) {
 		distance *= (1 - d);
