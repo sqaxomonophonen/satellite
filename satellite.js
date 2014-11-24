@@ -441,8 +441,6 @@ function EarthRenderer(image) {
 
 	})();
 
-	//console.log(buffers);
-
 	this.draw = function (projection, view, time) {
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
