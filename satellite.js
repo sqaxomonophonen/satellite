@@ -81,6 +81,10 @@ function Shader(id, attributes) {
 		gl.uniform1f(uniform(name), value);
 	}
 
+	this.set_uniform_v3 = function (name, value) {
+		gl.uniform3f(uniform(name), value[0], value[1], value[2]);
+	}
+
 	this.set_uniform_int = function (name, value) {
 		gl.uniform1i(uniform(name), value);
 	}
@@ -496,13 +500,17 @@ function OrbitRenderer(orbits) {
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vdata), gl.STATIC_DRAW);
 		buffers[k] = {"vb": vb, "count": count};
 	}
-	this.draw = function (projection, view, time) {
+
+	this.draw = function (projection, view, time, display_set) {
+		var all = true;
+		for (var k in display_set) { all = false; break; }
+
+
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 		gl.enable(gl.DEPTH_TEST);
 		gl.depthMask(false);
 		gl.disable(gl.CULL_FACE);
-		gl.lineWidth(3);
 		shader.enable();
 		for (var k in buffers) {
 			var b = buffers[k];
@@ -511,6 +519,28 @@ function OrbitRenderer(orbits) {
 			shader.set_uniform_matrix("u_projection", projection);
 			shader.set_uniform_matrix("u_view", view);
 			shader.set_uniform_float("u_time", time);
+			var color;
+			var highlight;
+			var offset;
+			if (all) {
+				color = [0.3,0.6,1.0];
+				highlight = 1;
+				offset = 0.1;
+				gl.lineWidth(2);
+			} else if (display_set[k]) {
+				color = [0.4,0.7,1.0];
+				highlight = 1;
+				offset = 0.2;
+				gl.lineWidth(4);
+			} else {
+				color = [0.1, 0.0, 0.03];
+				highlight = 0.2;
+				offset = 0.0;
+				gl.lineWidth(1);
+			}
+			shader.set_uniform_v3("u_color", color);
+			shader.set_uniform_float("u_highlight", highlight);
+			shader.set_uniform_float("u_offset", offset);
 			gl.drawArrays(gl.LINES, 0, b.count);
 		};
 		shader.disable();
@@ -524,7 +554,7 @@ function Engine(screen, earth_texture, orbits) {
 	gl.enable(gl.BLEND);
 	gl.clearColor(0.02,0,0,0);
 
-	this.draw = function (distance, rotation) {
+	this.draw = function (distance, rotation, display_set) {
 		var w = screen.offsetWidth;
 		var h = screen.offsetHeight;
 		screen.width = w;
@@ -542,7 +572,7 @@ function Engine(screen, earth_texture, orbits) {
 		view = m4mul(view, m4rotation([0,1,0], phi + rotation[0]));
 
 		earth.draw(projection, view, time);
-		orbit.draw(projection, view, time);
+		orbit.draw(projection, view, time, display_set);
 	};
 };
 
@@ -564,14 +594,25 @@ window.onload = function () {
 	var distance = 15000;
 	var rotation = [0,10];
 
+	var display_set = {};
+
+	var add_set = function (set) {
+		display_set[set] = true;
+		console.log(display_set);
+	};
+
+	var remove_set = function (set) {
+		delete display_set[set];
+		console.log(display_set);
+	};
+
 	var earth_texture = new Image();
 	earth_texture.onload = function () {
 		var orbits = new Orbits(data0);
-		data0 = null;
 		var engine = new Engine(screen, earth_texture, orbits);
 
 		(function loop() {
-			engine.draw(distance, rotation);
+			engine.draw(distance, rotation, display_set);
 			request_animation_frame(loop);
 		})();
 	}
@@ -622,24 +663,131 @@ window.onload = function () {
 		lastp = p;
 	};
 
-	window.onmousewheel = function (e) {
+	screen.onmousewheel = function (e) {
 		scroll(e.wheelDelta * 0.0001);
 	};
 
-	window.onmousedown = function (e) {
+	screen.onmousedown = function (e) {
 		mousedown([e.layerX, e.layerY]);
 	};
 
-	window.onmouseup = function (e) {
+	screen.onmouseup = function (e) {
 		mouseup([e.layerX, e.layerY]);
 	};
 
-	window.onmousemove = function (e) {
+	screen.onmousemove = function (e) {
 		mousemove([e.layerX, e.layerY]);
 	};
 
-	window.addEventListener('DOMMouseScroll', function (e) {
+	screen.addEventListener('DOMMouseScroll', function (e) {
 		scroll(e.detail * -0.003);
 	}, false);
+
+	var gear_open = false;
+
+	var gear_expand = document.getElementById('gear_expand');
+	var gear_body = document.getElementById('gear_body');
+	gear_expand.onclick = function () {
+		if (gear_open) {
+			gear_body.setAttribute('class', 'hide');
+			gear_expand.innerHTML = 'filter [+]';
+		} else {
+			gear_body.removeAttribute('class');
+			gear_expand.innerHTML = 'filter [-]';
+		}
+		gear_open = !gear_open;
+	};
+
+	var set_map = {
+		'amateur': ['Amateur Radio'],
+		'argos': ['ARGOS', 'http://www.noaasis.noaa.gov/ARGOS', 'ARGOS Data Collection System'],
+		'beidou': ['Beidou', 'http://en.beidou.gov.cn', 'Beidou navigation system'],
+		'cubesat': ['CubeSat', 'http://www.cubesat.org/index.php/about-us', 'CubeSat research'],
+		'dmc': ['DMC', 'https://en.wikipedia.org/wiki/Disaster_Monitoring_Constellation', 'Disaster Monitoring Constellation'],
+		'education': ['Education'],
+		'engineering': ['Engineering'],
+		'galileo': ['Galileo', 'https://en.wikipedia.org/wiki/Galileo_(satellite_navigation)', 'Galileo navigation system'],
+		'geo': ['Geostationary', 'https://en.wikipedia.org/wiki/Geostationary_orbit', 'Geostationary orbit'],
+		'geodetic': ['Geodetic'],
+		'glo-ops': ['GLONASS', 'https://en.wikipedia.org/wiki/GLONASS', 'GLONASS navigation system'],
+		'globalstar': ['Globalstar', 'https://en.wikipedia.org/wiki/Globalstar', 'Globalstar communications'],
+		'goes': ['GOES', 'https://en.wikipedia.org/wiki/Geostationary_Operational_Environmental_Satellite', 'Geostationary Operational Environmental Satellites'],
+		'gorizont': ['Gorizont', 'https://en.wikipedia.org/wiki/Gorizont', 'Gorizont communications'],
+		'gps-ops': ['GPS', 'https://en.wikipedia.org/wiki/Global_Positioning_System', 'Global Positioning System'],
+		'intelsat': ['Intelsat', 'https://en.wikipedia.org/wiki/Intelsat', 'Intelsat communications'],
+		'iridium': ['Iridium', 'https://en.wikipedia.org/wiki/Iridium_satellite_constellation', 'Iridium satellite constellation'],
+		'military': ['Miscellaneous Military'],
+		'molniya': ['Molniya', 'https://en.wikipedia.org/wiki/Molniya_(satellite)', 'Molniya military communications'],
+		'musson': ['Russian LEO Navigation'],
+		'noaa': ['NOAA', 'http://www.noaa.gov', 'National Oceanic and Atmospheric Administration'],
+		'nnss': ['NNSS', 'https://en.wikipedia.org/wiki/Transit_(satellite)', 'Navy Navigation Satellite System'],
+		'orbcomm': ['Orbcomm', 'https://en.wikipedia.org/wiki/Orbcomm', 'Orbcomm communications'],
+		'other': ['Celestis', 'https://en.wikipedia.org/wiki/Celestis', 'Celestis space burial'],
+		'other-comm': ['Other Communications'],
+		'radar': ['Radar Calibration'],
+		'raduga': ['Raduga', 'http://www.russianspaceweb.com/raduga.html', 'Raduga communications'],
+		'resource': ['Earth Resources'],
+		'sarsat': ['Search &amp; Rescue'],
+		'sbas': ['SBAS', 'https://en.wikipedia.org/wiki/GNSS_augmentation#Satellite-based_augmentation_system', 'Satellite-based augmentation system'],
+		'science': ['Space &amp; Earth Science'],
+		'stations': ['Space Stations'],
+		'tdrss': ['TDRSS', 'https://en.wikipedia.org/wiki/Tracking_and_Data_Relay_Satellite_System', 'Tracking and Data Relay Satellite System'],
+		'weather': ['Weather'],
+		'x-comm': ['Experimental Communications']
+	};
+
+	var fs = [];
+	for (var set in data0) {
+		if (set[0] == "_") continue;
+		if (set_map[set]) {
+			var vs = set_map[set];
+			if (vs.length == 3) {
+				fs.push([set, vs[0], vs[1], vs[2]]);
+			} else {
+				fs.push([set, vs[0], null, null]);
+			}
+		} else {
+			fs.push([set, set, null, null]);
+		}
+	}
+	fs = fs.sort(function (a,b) { return a[1].localeCompare(b[1]); });
+
+	var container = document.createElement('div');
+	for (var i in fs) {
+		var f = fs[i];
+		var span = document.createElement('span');
+		var input = document.createElement('input');
+		input.setAttribute('type', 'checkbox');
+		(function (input, set) {
+			input.onchange = function () {
+				if (input.checked) {
+					add_set(set);
+				} else {
+					remove_set(set);
+				}
+			};
+		})(input, f[0]);
+		span.appendChild(input);
+		var n = data0[f[0]].length;
+		if (f[2]) {
+			var a = document.createElement('a');
+			a.setAttribute('href', f[2]);
+			a.setAttribute('title', f[3] + ' (' + n + ' satellites)');
+			a.setAttribute('target', '_blank');
+			a.innerHTML = f[1];
+			span.appendChild(a);
+		} else {
+			var txt = document.createElement('span');
+			txt.setAttribute('title', '(' + n + ' satellites)');
+			txt.innerHTML = f[1];
+			span.appendChild(txt);
+		}
+		container.appendChild(span);
+		container.appendChild(document.createElement('br'));
+	}
+
+
+	document.getElementById('gear_filters').appendChild(container);
+
 }
 

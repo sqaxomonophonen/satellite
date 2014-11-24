@@ -64,15 +64,17 @@ varying float v_M;
 varying float v_mm;
 
 uniform float u_time;
+uniform vec3 u_color;
+uniform float u_highlight;
+uniform float u_offset;
 
 void main(void)
 {
 	float mp = (u_time / (1000.0*24.0*60.0*60.0)) * v_mm;
 	float m = 1.0-fract(v_M/360.0 + mp + 1000.0);
 	float m1 = pow(m,50.0);
-	float m2 = pow(m,200.0);
-	float off = 0.1;
-	gl_FragColor = vec4(0.3,0.6,1.0, m1 * (1.0-off) + off) + vec4(1,1,1,1)*m2;
+	float m2 = pow(m,200.0) * u_highlight;
+	gl_FragColor = vec4(u_color, m1 * (1.0-u_offset) + u_offset) + vec4(1,1,1,1)*m2;
 }
 </script>
 
@@ -86,13 +88,55 @@ body {
 	color: white;
 	font-family: monospace;
 }
+a:link {
+	color: yellow;
+}
+a:visited {
+	color: yellow;
+}
+a:active {
+	color: yellow;
+}
 canvas {
 	width: 100%;
 	height: 100%;
 }
+#gear {
+	position: absolute;
+	top: 0;
+	left: 0;
+	border: 1px solid black;
+	background-color: #002010;
+	opacity: 0.8;
+	padding: 5px;
+}
+#gear_expand {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: pointer;
+}
+.hide {
+	display: none;
+}
 </style>
 </head>
 <body>
+<div id="gear">
+<span id="gear_expand">filter [+]</span>
+<div id="gear_body" class="hide">
+<br/>
+<div id="gear_filters">
+</div>
+<div id="gear_footer">
+<br/>
+<strong>Data from <a href="http://celestrak.com" target="_blank">CelesTrak</a></strong>
+</div>
+</div>
+</div>
 <canvas id="screen"></canvas>
 <a href="https://github.com/sqaxomonophonen/satellite"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/52760788cde945287fbb584134c4cbc2bc36f904/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f77686974655f6666666666662e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_white_ffffff.png"></a>
 </body>
