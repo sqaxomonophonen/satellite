@@ -394,9 +394,9 @@ function EarthRenderer(image) {
 		var nx = 64;
 		var ny = 48;
 
-		for (var y = 0; y < ny; y++) {
+		for (var y = 0; y <= ny; y++) {
 			for (var x = 0; x <= nx; x++) {
-				var yrad = ((y/ny)*2-1)*Math.PI;
+				var yrad = ((y/ny)-0.5)*Math.PI;
 				var xrad = ((x%nx)/nx)*Math.PI*2;
 
 				// xyz
@@ -406,12 +406,12 @@ function EarthRenderer(image) {
 
 				// uv
 				vdata.push(1-x/nx);
-				vdata.push((1-(y/ny))*3-2.0); // XXX why?
+				vdata.push(1-y/ny);
 			}
 		}
 
 		var idata = []
-		for (var y = 0; y < (ny-1); y++) {
+		for (var y = 0; y < ny; y++) {
 			for (var x = 0; x < nx; x++) {
 				var x1 = x+1;
 				var y1 = y+1;
