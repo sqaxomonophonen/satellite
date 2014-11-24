@@ -9,8 +9,10 @@ import json
 
 db = {}
 
-def dbmerge(norad, data):
+def dbmerge(norad, data, ifexists = False):
 	if norad not in db:
+		if ifexists:
+			return
 		db[norad] = {}
 	elif "epoch" in data and "epoch" in db[norad] and data["epoch"] < db[norad]["epoch"]:
 		return
@@ -114,12 +116,24 @@ def parse_tle(lines, set):
 		else:
 			name = line.strip()
 
+def is_satcat(lines):
+	return len(lines[0]) == 134 and len(lines[-1]) == 134
+
+def parse_satcat(lines):
+	for line in lines:
+		norad = line[13:18]
+		owner = line[49:56].strip()
+		dbmerge(norad, {"owner": owner}, True)
+
 for path in sys.argv[1:]:
 	lines = read_lines(path)
 
 	if is_tle(lines):
 		print "TLE %s ..." % path
 		parse_tle(lines, os.path.splitext(os.path.basename(path))[0])
+	elif is_satcat(lines):
+		print "SATCAT %s ..." % path
+		parse_satcat(lines)
 	else:
 		raise ValueError("cannot parse %s: could not guess filetype" % path)
 
@@ -141,6 +155,7 @@ for k,v in db.items():
 		v['eccentricity'],
 		v['argument_of_perigee'],
 		M,
-		v['mean_motion']
+		v['mean_motion'],
+		('owner' in v) and v['owner'] or "?"
 	])
 with open("data0.js", "w") as f: f.write("var data0=" + json.dumps(data0, cls = json.JSONEncoder).replace(" ", "") + ";\n")
