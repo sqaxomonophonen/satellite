@@ -127,6 +127,7 @@ max_epoch = max([v['epoch'] for v in db.values()])
 
 print "writing data0.js ..."
 data0 = {"_epoch": long(long(time.mktime(max_epoch.timetuple())) * 1e3 + max_epoch.microsecond / 1e3)}
+total = 0
 for k,v in db.items():
 	if v['set'] not in data0:
 		data0[v['set']] = []
@@ -143,4 +144,6 @@ for k,v in db.items():
 		M,
 		v['mean_motion']
 	])
+	total += 1
 with open("data0.js", "w") as f: f.write("var data0=" + json.dumps(data0, cls = json.JSONEncoder).replace(" ", "") + ";\n")
+print "total: %d orbits" % total
