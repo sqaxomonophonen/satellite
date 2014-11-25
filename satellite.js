@@ -641,7 +641,7 @@ window.onload = function () {
 		anchor = p;
 	};
 
-	var mouseup = function (p) {
+	var mouseup = function () {
 		pressed = false;
 		dragging = false;
 		anchor = null;
@@ -672,7 +672,11 @@ window.onload = function () {
 	};
 
 	screen.onmouseup = function (e) {
-		mouseup([e.layerX, e.layerY]);
+		mouseup();
+	};
+
+	screen.onmouseleave = function (e) {
+		mouseup();
 	};
 
 	screen.onmousemove = function (e) {
