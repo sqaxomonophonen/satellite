@@ -312,6 +312,8 @@ function vscale(v, scalar) {
 
 function Orbits(data0) {
 	var epoch = data0._epoch;
+	var start = Date.now();
+
 	delete data0._epoch;
 
 	var G = 6.6738480e-11; // gravitational constant
@@ -376,7 +378,7 @@ function Orbits(data0) {
 	};
 
 	this.get_time = function () {
-		return Date.now() - epoch;
+		return Date.now() - start;
 	};
 };
 
