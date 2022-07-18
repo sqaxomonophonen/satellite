@@ -1,6 +1,6 @@
 WebGL based viewer for Kepler orbits described by two-line element sets (TLEs).
 
-Try it out here: http://veralin.dk/satellite/
+Try it out here: http://veralin.dk/satellite/index.html
 
 ![alt tag](https://raw.github.com/sqaxomonophonen/satellite/master/media/screenshot.jpg)
 
